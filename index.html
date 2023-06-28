@@ -280,9 +280,9 @@
                     const code = selectedFeature.attributes.Identifiant_national_BSS;
                     const link = "http://services.ades.eaufrance.fr/pointeau/" + code;
                     //const link = "https://raw.githack.com/gustavogabbardo/StageHydro95/main/" + code + ".html";
-                    $("#modal-object").attr("data", link);
-                    $("#myModal").modal("show");
-                    //window.open(link, "_blank");
+                    //$("#modal-object").attr("data", link);
+                    //$("#myModal").modal("show");
+                    window.open(link, "_blank");
                 }
             });
 
@@ -383,7 +383,8 @@
             const featureMasseEau = new FeatureLayer({
                 url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/masses_eau/FeatureServer/0",
                 renderer: masseEauRenderer,
-                title: "Masses d'eau souterraines"
+                title: "Masses d'eau souterraines",
+                visible: false
             });
             map.add(featureMasseEau, 0);
 
