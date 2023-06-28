@@ -1,0 +1,858 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Portail départemental des données sur les eaux souterraines (95)</title>
+
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        .esri-icon-download {
+            border: none;
+        }
+
+        .close-button {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+    <link rel="icon" type="image/png" href="water.png">
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.26/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.26/"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <script>
+        require([
+            "esri/Map",
+            "esri/layers/FeatureLayer",
+            "esri/views/MapView",
+            "esri/geometry/geometryEngine",
+            "esri/widgets/Fullscreen",
+            "esri/widgets/Home",
+            "esri/widgets/BasemapGallery",
+            "esri/widgets/Legend",
+            "esri/widgets/Expand",
+            "esri/symbols/WebStyleSymbol",
+            "esri/symbols/MarkerSymbol",
+            "esri/widgets/LayerList",
+            "esri/widgets/ScaleBar",
+            "esri/widgets/Search",
+            "esri/widgets/DistanceMeasurement2D"
+        ], (
+            Map,
+            FeatureLayer,
+            MapView,
+            geometryEngine,
+            Fullscreen,
+            Home,
+            BasemapGallery,
+            Legend,
+            Expand,
+            WebStyleSymbol,
+            MarkerSymbol,
+            LayerList,
+            ScaleBar,
+            Search,
+            DistanceMeasurement2D
+        ) => {
+            // Créer la carte
+            const map = new Map({
+                basemap: "topo-vector"  // Fond de carte par défaut
+            });
+
+            //===============================================================================================
+
+            // Créer le MapView
+            const view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [2.150, 49.075],  // Coordonnées lon/lat du point central de la carte 
+                zoom: 10    // Niveau de zoom initial
+            });
+
+            //===============================================================================================
+
+            // Outil pour visualiser la carte par défaut
+            view.ui.add(
+                new Home({
+                    view: view
+                }),
+                "top-left"
+            );
+
+            //===============================================================================================
+
+            // Outil pour choisir d'autres options de fonds de carte 
+            var basemapGallery = new BasemapGallery({
+                view: view,
+                source: {
+                    portal: {
+                        url: "https://www.arcgis.com",
+                        useVectorBasemaps: true
+                    }
+                }
+            });
+
+            //===============================================================================================
+
+            // Outil pour afficher/cacher la galerie d'options de fonds de carte 
+            var bgExpand = new Expand({
+                view: view,
+                content: basemapGallery,
+                expandIconClass: "esri-icon-collection",
+                expandTooltip: "Fonds de carte",
+            });
+            view.ui.add(bgExpand, "top-left");
+
+            //===============================================================================================
+
+            // Créer un bouton d'action dans le pop-up pour visualiser un graphique 
+            const noAction = {
+                //title: "",
+                id: "action-val-oise",
+                image: "logo_val_oise.png" // Il est également possible de charger une image
+            };
+
+            //===============================================================================================
+
+            // Créer un bouton d'action dans le pop-up pour visualiser un graphique 
+            const myAction = {
+                title: "Données",
+                id: "action",
+                className: "esri-icon-chart", // https://developers.arcgis.com/javascript/latest/esri-icon-font/
+                //image: "" // Il est également possible de charger une image
+            };
+
+            //===============================================================================================
+
+            // Template du pop-up
+            const template = {
+                "title": "Point d'eau ADES",
+                "content": [{
+                    "type": "fields",
+                    "fieldInfos": [
+                        {
+                            "fieldName": "Identifiant_national_BSS",
+                            "label": "Identifiant national BSS",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": null,
+                            "stringFieldOption": "text-box"
+                        },
+                        {
+                            "fieldName": "Dénomination",
+                            "label": "Dénomination",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": null,
+                            "stringFieldOption": "text-box"
+                        },
+                        {
+                            "fieldName": "Altitude",
+                            "label": "Altitude (m)",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": {
+                                "places": 2,
+                                "digitSeparator": true
+                            },
+                            "stringFieldOption": "text-box"
+                        },
+                        {
+                            "fieldName": "X_WGS84",
+                            "label": "X (WGS84)",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": {
+                                "places": 7,
+                                "digitSeparator": true
+                            },
+                            "stringFieldOption": "text-box"
+                        },
+                        {
+                            "fieldName": "Y_WGS84",
+                            "label": "Y (WGS84)",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": {
+                                "places": 7,
+                                "digitSeparator": true
+                            },
+                            "stringFieldOption": "text-box"
+                        },
+                        {
+                            "fieldName": "Longueur_Chronique",
+                            "label": "Longueur de la chronique (ans)",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": {
+                                "places": 2,
+                                "digitSeparator": true
+                            },
+                            "stringFieldOption": "text-box"
+                        },
+                        {
+                            "fieldName": "Etat_du_point_d_eau",
+                            "label": "État d'opération",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": null,
+                            "stringFieldOption": "text-box"
+                        },
+                        {
+                            "fieldName": "Code_masse_eau",
+                            "label": "Code masse d'eau",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": null,
+                            "stringFieldOption": "text-box"
+                        },
+                        {
+                            "fieldName": "Masse_eau",
+                            "label": "Masse d'eau",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": null,
+                            "stringFieldOption": "text-box"
+                        },
+                        {
+                            "fieldName": "Entité_hydro_BDLISA",
+                            "label": "Code entité hydrogéologique",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": null,
+                            "stringFieldOption": "text-box"
+                        },
+                        {
+                            "fieldName": "Entité_BDLISA",
+                            "label": "Entité hydrogéologique",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": null,
+                            "stringFieldOption": "text-box"
+                        }
+                    ]
+                }],
+                actions: [noAction, myAction] // Actions disponibles sur les boutons 
+            };
+
+            //===============================================================================================
+
+            // Réglér l'action du bouton
+            view.popup.on("trigger-action", (event) => {
+                if (event.action.id === "action-val-oise") {
+                    const link = "https://www.valdoise.fr/2-mon-departement.htm";
+                    window.open(link, '_blank');
+                }
+            });
+
+            //===============================================================================================
+
+            // Réglér l'action du bouton
+            view.popup.on("trigger-action", (event) => {
+                if (event.action.id === "action") {
+                    const selectedFeature = view.popup.selectedFeature;
+                    const code = selectedFeature.attributes.Identifiant_national_BSS;
+                    const link = "http://services.ades.eaufrance.fr/pointeau/" + code;
+                    //const link = "https://raw.githack.com/gustavogabbardo/StageHydro95/main/" + code + ".html";
+                    $("#modal-object").attr("data", link);
+                    $("#myModal").modal("show");
+                    //window.open(link, "_blank");
+                }
+            });
+
+
+            //===============================================================================================
+
+            // Créer un nouveau type de symbologie pour représenter les masses d'eau associées au département
+            const colorsMasseEau = ["#FED2D2", "#A0CAF6", "#CDF5FD", "#EDE2FD", "#FDEFD0", "#DEFDD0"];
+
+            const commonPropertiesME = {
+                type: "simple-fill",
+                color: [0, 0, 0, 0], // Pas de couleur de remplissage
+                outline: {
+                    color: [0, 0, 0],
+                    width: 0.5
+                }
+            };
+
+            // Symbologie pour la masse d'eau HG002
+            const symbolHG002 = {
+                ...commonPropertiesME,
+                color: colorsMasseEau[0]
+            };
+
+            // Symbologie pour la masse d'eau HG001
+            const symbolHG001 = {
+                ...commonPropertiesME,
+                color: colorsMasseEau[1]
+            };
+
+            // Symbologie pour la masse d'eau HG201
+            const symbolHG201 = {
+                ...commonPropertiesME,
+                color: colorsMasseEau[2]
+            };
+
+            // Symbologie pour la masse d'eau HG102
+            const symbolHG102 = {
+                ...commonPropertiesME,
+                color: colorsMasseEau[3]
+            };
+
+            // Symbologie pour la masse d'eau HG104
+            const symbolHG104 = {
+                ...commonPropertiesME,
+                color: colorsMasseEau[4]
+            };
+
+            // Symbologie pour la masse d'eau HG002
+            const symbolHG107 = {
+                ...commonPropertiesME,
+                color: colorsMasseEau[5]
+            };
+
+            const masseEauRenderer = {
+                type: "unique-value", // autocasts as new UniqueValueRenderer()
+                legendOptions: {
+                    title: ""
+                },
+                defaultSymbol: commonPropertiesME,
+                defaultLabel: "Albien-Néocomien captif",
+                field: "CDMasseDEa",
+                uniqueValueInfos: [
+                    {
+                        value: "HG002",
+                        symbol: symbolHG002,
+                        label: "Alluvions de l'Oise"
+                    },
+                    {
+                        value: "HG001",
+                        symbol: symbolHG001,
+                        label: "Alluvions de la Seine moyenne et avale"
+                    },
+                    {
+                        value: "HG201",
+                        symbol: symbolHG201,
+                        label: "Craie du Vexin normand et picard"
+                    },
+                    {
+                        value: "HG102",
+                        symbol: symbolHG102,
+                        label: "Craie et Tertiaire du Mantois à l'Hurepoix"
+                    },
+                    {
+                        value: "HG104",
+                        symbol: symbolHG104,
+                        label: "Eocène du Valois"
+                    },
+                    {
+                        value: "HG107",
+                        symbol: symbolHG107,
+                        label: "Eocène et Craie du Vexin Français"
+                    }
+                ]
+            };
+
+            // Charger le fichier shapefile des masses d'eau souterraines
+            const featureMasseEau = new FeatureLayer({
+                url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/masses_eau/FeatureServer/0",
+                renderer: masseEauRenderer,
+                title: "Masses d'eau souterraines"
+            });
+            map.add(featureMasseEau, 0);
+
+            //===============================================================================================
+            // Créer un nouveau type de symbologie pour représenter les départements
+
+            const commonDepartements = {
+                type: "simple-fill",
+                color: [0, 0, 0, 0], // Pas de couleur de remplissage
+                outline: {
+                    color: "#000000",
+                    width: 1
+                }
+            };
+
+            // Symbologie pour le département du Val d'Oise
+            const symbolDepartement95 = {
+                ...commonDepartements,
+                outline: {
+                    color: "#000000",
+                    width: 2
+                }
+            };
+
+            const departementsRenderer = {
+                type: "unique-value", // autocasts as new UniqueValueRenderer()
+                legendOptions: {
+                    title: ""
+                },
+                defaultSymbol: commonDepartements,
+                defaultLabel: "Autres",
+                field: "NOM_M",
+                uniqueValueInfos: [
+                    {
+                        value: "VAL-D'OISE",
+                        symbol: symbolDepartement95,
+                        label: "Val d'Oise"
+                    }
+                ]
+            };
+
+            // Charger le fichier shapefile des départements
+            const featureDepartements = new FeatureLayer({
+                url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/departements/FeatureServer/0",
+                renderer: departementsRenderer,
+                title: "Limites des départements"
+            });
+            map.add(featureDepartements, 1);
+
+
+            //===============================================================================================
+
+            // Créer un nouveau type de symbologie pour représenter les points des piézomètres
+            const colors = ["#FFFF73", "#FF7F7F", "#73DFFF", "#98E600", "#D79E9E", "#FFBEE8", "#B2B2B2"];
+
+            const commonProperties = {
+                type: "simple-marker",
+                style: "square",
+                size: "10px"  // pixels
+            };
+
+            // Symbologie pour la Craie
+            const symbolCraie = {
+                ...commonProperties,
+                color: colors[0]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolLutentien = {
+                ...commonProperties,
+                color: colors[1]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolLutentienYpresien = {
+                ...commonProperties,
+                color: colors[2]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolYpresien = {
+                ...commonProperties,
+                color: colors[3]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolYpresienSousCouverture = {
+                ...commonProperties,
+                color: colors[4]
+            };
+            // Symbologie pour les Alluvions de l'Oise
+            const symbolAlluvionsOise = {
+                ...commonProperties,
+                color: colors[5]
+            };
+            // Symbologie pour les Autres (d'autres entités, > 2 entités, non renseigné)
+            const symbolAutres = {
+                ...commonProperties,
+                color: colors[6]
+            };
+
+            const piezoRenderer = {
+                type: "unique-value", // autocasts as new UniqueValueRenderer()
+                legendOptions: {
+                    title: "Entité hydrogéologique"
+                },
+                defaultSymbol: symbolAutres,
+                defaultLabel: "Autres",
+                field: "Groupe_hydrogeologique",
+                uniqueValueInfos: [
+                    {
+                        value: "Craie du Crétacé",
+                        symbol: symbolCraie,
+                        label: "Craie du Crétacé supérieur"
+                    },
+                    {
+                        value: "Calcaires du Lutétien",
+                        symbol: symbolLutentien,
+                        label: "Calcaires du Lutétien"
+                    },
+                    {
+                        value: "Calcaires du Lutétien ; Sables de l'Yprésien",
+                        symbol: symbolLutentienYpresien,
+                        label: "Calcaires du Lutétien et Sables de l'Yprésien"
+                    },
+                    {
+                        value: "Sables de l'Yprésien",
+                        symbol: symbolYpresien,
+                        label: "Sables de l'Yprésien"
+                    },
+                    {
+                        value: "Sables de l'Yprésien sous couverture des argiles",
+                        symbol: symbolYpresienSousCouverture,
+                        label: "Sables de l'Yprésien sous couverture des Argiles de Laon"
+                    },
+                    {
+                        value: "Alluvions de l'Oise",
+                        symbol: symbolAlluvionsOise,
+                        label: "Alluvions de l'Oise"
+                    }
+                ]
+            };
+
+            // Charger le fichier shapefile des piézomètres
+            const featureLayer = new FeatureLayer({
+                url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/piezometres/FeatureServer/0",
+                popupTemplate: template,
+                renderer: piezoRenderer,
+                title: "Piézomètres (ADES)"
+            });
+            map.add(featureLayer, 2);
+
+            //===============================================================================================
+
+            // Créer un nouveau type de symbologie pour représenter les points des pqualitomètres
+            const commonPropertiesQualito = {
+                type: "simple-marker",
+                style: "circle",
+                size: "10px"  // pixels
+            };
+
+            // Symbologie pour la Craie
+            const symbolCraieQualito = {
+                ...commonPropertiesQualito,
+                color: colors[0]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolLutentienQualito = {
+                ...commonPropertiesQualito,
+                color: colors[1]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolLutentienYpresienQualito = {
+                ...commonPropertiesQualito,
+                color: colors[2]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolYpresienQualito = {
+                ...commonPropertiesQualito,
+                color: colors[3]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolYpresienSousCouvertureQualito = {
+                ...commonPropertiesQualito,
+                color: colors[4]
+            };
+            // Symbologie pour les Alluvions de l'Oise
+            const symbolAlluvionsOiseQualito = {
+                ...commonPropertiesQualito,
+                color: colors[5]
+            };
+            // Symbologie pour les Autres (d'autres entités, > 2 entités, non renseigné)
+            const symbolAutresQualito = {
+                ...commonPropertiesQualito,
+                color: colors[6]
+            };
+
+            const qualitoRenderer = {
+                type: "unique-value", // autocasts as new UniqueValueRenderer()
+                legendOptions: {
+                    title: "Entité hydrogéologique"
+                },
+                defaultSymbol: symbolAutresQualito,
+                defaultLabel: "Autres",
+                field: "Groupe_hydrogeologique",
+                uniqueValueInfos: [
+                    {
+                        value: "Craie du Crétacé", // code for interstates/freeways
+                        symbol: symbolCraieQualito,
+                        label: "Craie du Crétacé supérieur"
+                    },
+                    {
+                        value: "Calcaires du Lutétien", // code for interstates/freeways
+                        symbol: symbolLutentienQualito,
+                        label: "Calcaires du Lutétien"
+                    },
+                    {
+                        value: "Calcaires du Lutétien ; Sables de l'Yprésien", // code for interstates/freeways
+                        symbol: symbolLutentienYpresienQualito,
+                        label: "Calcaires du Lutétien et Sables de l'Yprésien"
+                    },
+                    {
+                        value: "Sables de l'Yprésien", // code for interstates/freeways
+                        symbol: symbolYpresienQualito,
+                        label: "Sables de l'Yprésien"
+                    },
+                    {
+                        value: "Sables de l'Yprésien sous couverture des argiles", // code for interstates/freeways
+                        symbol: symbolYpresienSousCouvertureQualito,
+                        label: "Sables de l'Yprésien sous couverture des Argiles de Laon"
+                    },
+                    {
+                        value: "Alluvions de l'Oise", // code for interstates/freeways
+                        symbol: symbolAlluvionsOiseQualito,
+                        label: "Alluvions de l'Oise"
+                    }
+                ]
+            };
+
+            // Charger le fichier shapefile des piézomètres
+            const featureLayerQualito = new FeatureLayer({
+                url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/qualitometres/FeatureServer/0",
+                popupTemplate: template,
+                renderer: qualitoRenderer,
+                title: "Qualitomètres (ADES)"
+            });
+            map.add(featureLayerQualito, 3);
+
+            //===============================================================================================
+
+            // Outil de recherche d'un adresse ou d'un lieu
+            var search = new Search({
+                view: view
+            });
+            view.ui.add(search, {
+                position: "top-right"
+            });
+
+            //===============================================================================================
+
+            // Legende de la carte
+            var legend = new Legend({
+                view: view,
+                style: 'classis' //classic ou card,
+            });
+
+            // Bouton de visualisation de la légende
+            const legendExpand = new Expand({
+                expandIconClass: "esri-icon-legend",
+                expandTooltip: "Légende",
+                view: view,
+                content: legend,
+                expanded: true,
+            });
+            view.ui.add(legendExpand, "top-right");
+
+            //===============================================================================================
+
+            // Ferramenta de lista de layers disponíveis no mapa..
+            var layerList = new LayerList({
+                view: view,
+                selectionEnabled: true,
+                layers: [],
+                content: "Liste de calques"
+            });
+
+            const layerListExpand = new Expand({
+                expandIconClass: "esri-icon-layers",
+                expandTooltip: "Liste de Calques",
+                view: view,
+                content: layerList,
+                expanded: false,
+            });
+            view.ui.add(layerListExpand, "top-left");
+
+            //===============================================================================================
+
+            // Afficher les coordonnées de la carte
+            var coordsWidget = document.createElement("div");
+            coordsWidget.id = "coordsWidget";
+            coordsWidget.className = "esri-widget esri-component";
+            coordsWidget.style.padding = "7px 15px 5px";
+            view.ui.add(coordsWidget, "bottom-right");
+            function showCoordinates(pt) {
+                var coords = "Lat / Lon " + pt.latitude.toFixed(3) + " " + pt.longitude.toFixed(3);
+                coordsWidget.innerHTML = coords;
+            }
+            view.watch("stationary", function (isStationary) {
+                showCoordinates(view.center);
+            });
+            view.on("pointer-move", function (evt) {
+                showCoordinates(view.toMap({ x: evt.x, y: evt.y }));
+            });
+
+            //===============================================================================================
+
+            // Outil pour visualiser l'échelle cartographique 
+            var scalebar = new ScaleBar({
+                view: view,
+                unit: "metric",
+                style: "ruler"
+            });
+            view.ui.add(scalebar, "bottom-left");
+
+            //===============================================================================================
+
+            // Régler la visualisation highlight des features 
+            var highlightFeatureLayer = null;
+            var highlightFeatureLayerQualito = null;
+
+            // Evento "pointer-move" para ambos os layers
+            // Évenement "pointer-move" pour les deux feature layers
+            view.on("pointer-move", function (event) {
+                view.hitTest(event).then(function (response) {
+                    // Réseter le highlight des deux layers
+                    if (highlightFeatureLayer) {
+                        highlightFeatureLayer.remove();
+                        highlightFeatureLayer = null;
+                    }
+                    if (highlightFeatureLayerQualito) {
+                        highlightFeatureLayerQualito.remove();
+                        highlightFeatureLayerQualito = null;
+                    }
+
+                    // Vérifier si la sourris est positionnée sur le premier layer
+                    var featureLayerResults = response.results.filter(function (result) {
+                        return result.graphic.layer === featureLayer;
+                    });
+                    if (featureLayerResults.length > 0) {
+                        var feature = featureLayerResults[0].graphic;
+                        view.whenLayerView(featureLayer).then(function (featureLayerView) {
+                            highlightFeatureLayer = featureLayerView.highlight(feature);
+                        });
+                    } else {
+                        // Vérifier si la sourris est positionnée sur le deuxième layer
+                        var featureLayerQualitoResults = response.results.filter(function (result) {
+                            return result.graphic.layer === featureLayerQualito;
+                        });
+                        if (featureLayerQualitoResults.length > 0) {
+                            var featureQualito = featureLayerQualitoResults[0].graphic;
+                            view.whenLayerView(featureLayerQualito).then(function (featureLayerQualitoView) {
+                                highlightFeatureLayerQualito = featureLayerQualitoView.highlight(featureQualito);
+                            });
+                        }
+                    }
+                });
+            });
+
+
+
+            // //===============================================================================================
+
+            // // Bouton de download des données
+            // var downloadButton = document.createElement("button");
+            // downloadButton.classList.add("esri-icon-download", "esri-widget--button");
+            // downloadButton.setAttribute("title", "Télécharger les données");
+            // view.ui.add(downloadButton, "top-left");
+            // downloadButton.addEventListener("click", function () {
+            //     featureLayer.queryFeatures().then(function (results) {
+            //         var table = createTable(results.features);
+            //         exportTable(table, "data.csv");
+            //     });
+            // });
+            // function createTable(features) {
+            //     var header = ["Identifiant National BSS", "Description", "X (WGS84)", "Y (WGS84)", "Altitude (m)", "Date début", "Date fin", "Longueur (ans)", "État",
+            //         "Code Masse d'eau", "Masse d'eau", "Code Entité hydrogéologique", "Entité hydrogéologique", "URL"]; // Colonnes à être exportées sur le tableau
+            //     var rows = features.map(function (feature) {
+            //         return [ // Noms des colonnees selon la table d'attributs
+            //             feature.attributes.Identifiant_national_BSS,
+            //             feature.attributes.Dénomination,
+            //             feature.attributes.X_WGS84,
+            //             feature.attributes.Y_WGS84,
+            //             feature.attributes.Altitude__m,
+            //             feature.attributes.Date_debut,
+            //             feature.attributes.Date_fin,
+            //             feature.attributes.Longueur,
+            //             feature.attributes.Etat,
+            //             feature.attributes.Code_Masse_d_eau,
+            //             feature.attributes.Masse_d_eau,
+            //             feature.attributes.Code_Entite_Hydrogeologique,
+            //             feature.attributes.Entite_hydrogéologique,
+            //             feature.attributes.URL,
+            //         ];
+            //     });
+            //     rows.unshift(header);
+            //     var table = document.createElement("table");
+            //     rows.forEach(function (row) {
+            //         var tableRow = document.createElement("tr");
+            //         row.forEach(function (value) {
+            //             var tableCell = document.createElement("td");
+            //             tableCell.innerText = value;
+            //             tableRow.appendChild(tableCell);
+            //         });
+            //         table.appendChild(tableRow);
+            //     });
+            //     return table;
+            // }
+            // function exportTable(table, filename) {
+            //     var csv = tableToCSV(table);
+            //     var encodedUri = 'data:text/csv;charset=iso-8859-1,%EF%BB%BF' + encodeURIComponent(csv); // adiciona o encoding aqui
+            //     var downloadLink = document.createElement("a");
+            //     downloadLink.setAttribute("href", encodedUri);
+            //     downloadLink.setAttribute("download", filename);
+            //     downloadLink.click();
+            // }
+            // function tableToCSV(table) {
+            //     var rows = table.querySelectorAll("tr");
+            //     return Array.from(rows).map(function (row) {
+            //         var cells = row.querySelectorAll("td");
+            //         return Array.from(cells).map(function (cell) {
+            //             return '"' + cell.innerText.replace(/"/g, '""') + '"';
+            //         }).join(",");
+            //     }).join("\n");
+            // }
+
+            //===============================================================================================
+
+            // To add the DistanceMeasurement2D widget to the map
+            const measurementWidget = new DistanceMeasurement2D({
+                view: view
+            });
+
+            // Outil pour afficher/cacher la galerie d'options de fonds de carte 
+            var bgExpand = new Expand({
+                view: view,
+                content: measurementWidget,
+                expandIconClass: "esri-icon-measure",
+                expandTooltip: "Mesurer la distance",
+            });
+            view.ui.add(bgExpand, "top-left");
+
+        });
+
+    </script>
+</head>
+
+<body>
+    <div id="viewDiv"></div>
+
+    <!-- Modal pour représenter le graphique des données -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" style="width: 1100px;" role="document">
+            <div class="modal-content">
+                <div class="modal-body" style="height: 550px;">
+                    <object id="modal-object" type="text/html" width="1050" height="550"></object>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default close-button" data-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
