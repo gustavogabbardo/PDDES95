@@ -77,7 +77,8 @@
             "esri/renderers/ClassBreaksRenderer",
             "esri/widgets/DistanceMeasurement2D",
             "esri/widgets/HistogramRangeSlider",
-            "esri/smartMapping/statistics/histogram"
+            "esri/smartMapping/statistics/histogram",
+            "esri/widgets/Print"
         ], (
             Map,
             FeatureLayer,
@@ -97,11 +98,12 @@
             ClassBreaksRenderer,
             DistanceMeasurement2D,
             HistogramRangeSlider,
-            histogram
+            histogram,
+            Print
         ) => {
 
             //===============================================================================================
-            
+
             // Créer la carte web
             const map = new Map({
                 basemap: "topo-vector"  // Fond de carte par défaut
@@ -429,7 +431,7 @@
             map.add(featureMasseEau, 0);
 
             //===============================================================================================
-            
+
             // Créer un nouveau type de symbologie pour représenter les limites des départements
             const commonDepartements = {
                 type: "simple-fill",
@@ -478,7 +480,7 @@
             const commonPropertiesNitrates = {
                 type: "simple-marker",
                 style: "circle",
-                size: "10px" 
+                size: "10px"
             };
             // Symbologie pour la Craie
             const symbolCraieNitrates = {
@@ -594,7 +596,7 @@
             const commonProperties = {
                 type: "simple-marker",
                 style: "square",
-                size: "10px"  
+                size: "10px"
             };
             // Symbologie pour la Craie
             const symbolCraie = {
@@ -688,7 +690,7 @@
             const commonPropertiesQualito = {
                 type: "simple-marker",
                 style: "circle",
-                size: "10px" 
+                size: "10px"
             };
             // Symbologie pour la Craie
             const symbolCraieQualito = {
@@ -727,7 +729,7 @@
             };
             // Renderer
             const qualitoRenderer = {
-                type: "unique-value", 
+                type: "unique-value",
                 legendOptions: {
                     title: "Entité hydrogéologique"
                 },
@@ -736,7 +738,7 @@
                 field: "Groupe_hydrogeologique",
                 uniqueValueInfos: [
                     {
-                        value: "Craie du Crétacé", 
+                        value: "Craie du Crétacé",
                         symbol: symbolCraieQualito,
                         label: "Craie du Crétacé supérieur"
                     },
@@ -746,7 +748,7 @@
                         label: "Calcaires du Lutétien"
                     },
                     {
-                        value: "Calcaires du Lutétien ; Sables de l'Yprésien", 
+                        value: "Calcaires du Lutétien ; Sables de l'Yprésien",
                         symbol: symbolLutentienYpresienQualito,
                         label: "Calcaires du Lutétien et Sables de l'Yprésien"
                     },
@@ -775,48 +777,6 @@
                 title: "Qualitomètres (ADES)"
             });
             map.add(featureLayerQualito, 4);
-
-            //===============================================================================================
-
-            // Histogramme (filtrer les données selon les valeurs des concentrations de Nitrates)
-            view.whenLayerView(featureLayerNitrates).then((layerView) => {
-                const field = "Nitrates";
-                const min = 0;
-                const max = 150;
-                histogram({
-                    layer: featureLayerNitrates,
-                    field: field,
-                    numBins: 100,
-                    minValue: min,
-                    maxValue: max
-                }).then((histogramResponse) => {
-                    const slider = new HistogramRangeSlider({
-                        bins: histogramResponse.bins,
-                        min: min,
-                        max: max,
-                        values: [min, max],
-                        excludedBarColor: "#524e4e",
-                        rangeType: "between",
-                        container: document.getElementById("slider-container")
-                    });
-                    slider.on(
-                        ["thumb-change", "thumb-drag", "segment-drag"],
-                        (event) => {
-                            layerView.filter = {
-                                where: slider.generateWhereClause(field)
-                            };
-                        }
-                    );
-                    const filterExpand = new Expand({
-                        view: view,
-                        content: document.getElementById("controls"),
-                        expandIconClass: "esri-icon-filter",
-                        expandTooltip: "Filtrer les données",
-                        expanded: false
-                    });
-                    view.ui.add(filterExpand, "top-left");
-                });
-            });
 
             //===============================================================================================
 
@@ -989,6 +949,73 @@
                 }
             };
             view.ui.add(timeSlider, "manual");
+
+            //===============================================================================================
+
+            // Print
+            const print = new Print({
+                view: view,
+                // spécifiez votre propre service d'impression
+                printServiceUrl: "https://utility.arcgisonline.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task"
+            });
+
+            // Outil pour afficher/cacher le widget d'impression
+            var bgExpand = new Expand({
+                view: view,
+                content: null, // Définissez le contenu initial comme nul
+                expandIconClass: "esri-icon-printer",
+                expandTooltip: "Imprimer la carte",
+            });
+
+            view.ui.add(bgExpand, "top-left");
+
+            // Attendre que la vue soit prête
+            view.when(() => {
+                // Attribuer le widget d'impression comme contenu du widget d'expansion
+                bgExpand.content = print;
+            });
+
+            //===============================================================================================
+
+            // Histogramme (filtrer les données selon les valeurs des concentrations de Nitrates)
+            view.whenLayerView(featureLayerNitrates).then((layerView) => {
+                const field = "Nitrates";
+                const min = 0;
+                const max = 150;
+                histogram({
+                    layer: featureLayerNitrates,
+                    field: field,
+                    numBins: 100,
+                    minValue: min,
+                    maxValue: max
+                }).then((histogramResponse) => {
+                    const slider = new HistogramRangeSlider({
+                        bins: histogramResponse.bins,
+                        min: min,
+                        max: max,
+                        values: [min, max],
+                        excludedBarColor: "#524e4e",
+                        rangeType: "between",
+                        container: document.getElementById("slider-container")
+                    });
+                    slider.on(
+                        ["thumb-change", "thumb-drag", "segment-drag"],
+                        (event) => {
+                            layerView.filter = {
+                                where: slider.generateWhereClause(field)
+                            };
+                        }
+                    );
+                    const filterExpand = new Expand({
+                        view: view,
+                        content: document.getElementById("controls"),
+                        expandIconClass: "esri-icon-filter",
+                        expandTooltip: "Filtrer les données",
+                        expanded: false
+                    });
+                    view.ui.add(filterExpand, "top-left");
+                });
+            });
 
             //===============================================================================================
 
