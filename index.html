@@ -23,6 +23,27 @@
             font-family: 'Segoe UI', sans-serif;
             font-size: 14px;
         }
+
+        #timeSlider {
+            position: absolute;
+            left: 20%;
+            right: 20%;
+            bottom: 20px;
+        }
+
+        #controls {
+            width: 500px;
+        }
+
+        #outer-container {
+            padding: 15px;
+            width: 500px;
+        }
+
+        #description {
+            padding: 10px 10px 0px 10px;
+            font-size: 14pt;
+        }
     </style>
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
@@ -51,7 +72,11 @@
             "esri/widgets/LayerList",
             "esri/widgets/ScaleBar",
             "esri/widgets/Search",
-            "esri/widgets/DistanceMeasurement2D"
+            "esri/widgets/TimeSlider",
+            "esri/renderers/ClassBreaksRenderer",
+            "esri/widgets/DistanceMeasurement2D",
+            "esri/widgets/HistogramRangeSlider",
+            "esri/smartMapping/statistics/histogram"
         ], (
             Map,
             FeatureLayer,
@@ -67,7 +92,11 @@
             LayerList,
             ScaleBar,
             Search,
-            DistanceMeasurement2D
+            TimeSlider,
+            ClassBreaksRenderer,
+            DistanceMeasurement2D,
+            HistogramRangeSlider,
+            histogram
         ) => {
             // Créer la carte
             const map = new Map({
@@ -120,7 +149,7 @@
 
             //===============================================================================================
 
-            // Créer un bouton d'action dans le pop-up pour visualiser un graphique 
+            // Créer un bouton d'action dans le pop-up pour visualiser le site web du département
             const noAction = {
                 //title: "",
                 id: "action-val-oise",
@@ -134,8 +163,13 @@
                 title: "Données",
                 id: "action",
                 className: "esri-icon-chart", // https://developers.arcgis.com/javascript/latest/esri-icon-font/
-                //image: "" // Il est également possible de charger une image
             };
+
+            //===============================================================================================
+
+            // Codes couleurs de symbologie
+            const colorsMasseEau = ["#FED2D2", "#A0CAF6", "#CDF5FD", "#EDE2FD", "#FDEFD0", "#DEFDD0"];
+            const colors = ["#FFFF73", "#FF7F7F", "#73DFFF", "#98E600", "#D79E9E", "#FFBEE8", "#B2B2B2"];
 
             //===============================================================================================
 
@@ -199,15 +233,39 @@
                             },
                             "stringFieldOption": "text-box"
                         },
+                        // {
+                        //     "fieldName": "Longueur_Chronique",
+                        //     "label": "Longueur de la chronique (ans)",
+                        //     "isEditable": true,
+                        //     "tooltip": "",
+                        //     "visible": true,
+                        //     "format": {
+                        //         "places": 2,
+                        //         "digitSeparator": true
+                        //     },
+                        //     "stringFieldOption": "text-box"
+                        // },
                         {
-                            "fieldName": "Longueur_Chronique",
-                            "label": "Longueur de la chronique (ans)",
+                            "fieldName": "Nitrates",
+                            "label": "Nitrates (concentration moyenne annuelle en mg/L)",
                             "isEditable": true,
                             "tooltip": "",
                             "visible": true,
                             "format": {
                                 "places": 2,
                                 "digitSeparator": true
+                            },
+                            "stringFieldOption": "text-box"
+                        },
+                        {
+                            "fieldName": "year",
+                            "label": "Année",
+                            "isEditable": true,
+                            "tooltip": "",
+                            "visible": true,
+                            "format": {
+                                "places": 0,
+                                "digitSeparator": false
                             },
                             "stringFieldOption": "text-box"
                         },
@@ -290,7 +348,6 @@
             //===============================================================================================
 
             // Créer un nouveau type de symbologie pour représenter les masses d'eau associées au département
-            const colorsMasseEau = ["#FED2D2", "#A0CAF6", "#CDF5FD", "#EDE2FD", "#FDEFD0", "#DEFDD0"];
 
             const commonPropertiesME = {
                 type: "simple-fill",
@@ -434,11 +491,189 @@
             });
             map.add(featureDepartements, 1);
 
+            //==============================================================================================
+
+            // Créer un nouveau type de symbologie pour représenter les points des mesures de nitrates
+            const commonPropertiesNitrates = {
+                type: "simple-marker",
+                style: "circle",
+                size: "10px"  // pixels
+            };
+
+            // Symbologie pour la Craie
+            const symbolCraieNitrates = {
+                ...commonPropertiesNitrates,
+                color: colors[0]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolLutentienNitrates = {
+                ...commonPropertiesNitrates,
+                color: colors[1]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolLutentienYpresienNitrates = {
+                ...commonPropertiesNitrates,
+                color: colors[2]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolYpresienNitrates = {
+                ...commonPropertiesNitrates,
+                color: colors[3]
+            };
+            // Symbologie pour les Calcaires du Lutétien
+            const symbolYpresienSousCouvertureNitrates = {
+                ...commonPropertiesNitrates,
+                color: colors[4]
+            };
+            // Symbologie pour les Alluvions de l'Oise
+            const symbolAlluvionsOiseNitrates = {
+                ...commonPropertiesNitrates,
+                color: colors[5]
+            };
+            // Symbologie pour les Autres (d'autres entités, > 2 entités, non renseigné)
+            const symbolAutresNitrates = {
+                ...commonPropertiesNitrates,
+                color: colors[6]
+            };
+
+            const nitratesRenderer = {
+                type: "unique-value", // autocasts as new UniqueValueRenderer()
+                legendOptions: {
+                    title: "Entité hydrogéologique"
+                },
+                //defaultSymbol: symbolAutresNitrates,
+                //defaultLabel: "Autres",
+                field: "Groupe_hydrogeologique",
+                uniqueValueInfos: [
+                    {
+                        value: "Craie du Crétacé",
+                        symbol: symbolCraieNitrates,
+                        label: "Craie du Crétacé supérieur"
+                    },
+                    {
+                        value: "Calcaires du Lutétien",
+                        symbol: symbolLutentienNitrates,
+                        label: "Calcaires du Lutétien"
+                    },
+                    {
+                        value: "Calcaires du Lutétien ; Sables de l'Yprésien",
+                        symbol: symbolLutentienYpresienNitrates,
+                        label: "Calcaires du Lutétien et Sables de l'Yprésien"
+                    },
+                    {
+                        value: "Sables de l'Yprésien",
+                        symbol: symbolYpresienNitrates,
+                        label: "Sables de l'Yprésien"
+                    },
+                    {
+                        value: "Sables de l'Yprésien sous couverture des argiles",
+                        symbol: symbolYpresienSousCouvertureNitrates,
+                        label: "Sables de l'Yprésien sous couverture des Argiles de Laon"
+                    },
+                    {
+                        value: "Alluvions de l'Oise",
+                        symbol: symbolAlluvionsOiseNitrates,
+                        label: "Alluvions de l'Oise"
+                    },
+                    {
+                        value: "Autres",
+                        symbol: symbolAutresNitrates,
+                        label: "Autres"
+                    }
+                ]
+            };
+            // Size
+            const sizeVisualVariable = {
+                type: "size",
+                field: "Nitrates",
+                legendOptions: {
+                    title: "Concentration moyenne annuelle (mg/L)"
+                },
+                stops: [
+                    { value: 10, size: "8px", label: "0 à 10" },
+                    { value: 20, size: "12px", label: "10 à 20" },
+                    { value: 35, size: "16px", label: "20 à 35" },
+                    { value: 50, size: "20px", label: "35 à 50" },
+                    { value: 51, size: "30px", label: "> 50" }
+                ]
+            };
+            nitratesRenderer.visualVariables = [sizeVisualVariable];
+
+            // var nitratesRenderer = {
+            //     type: "class-breaks",
+            //     field: "Nitrates",
+            //     legendOptions: {
+            //         title: "Concentration moyenne annuelle (mg/L)"
+            //     },
+            //     classBreakInfos: [
+            //         {
+            //             minValue: -1,
+            //             maxValue: 10,
+            //             label: "< 10",
+            //             symbol: {
+            //                 type: "simple-marker",
+            //                 style: "circle",
+            //                 size: "15px",
+            //                 color: "#147218"
+            //             }
+            //         }, {
+            //             minValue: 10,
+            //             maxValue: 20,
+            //             label: "10 à 20",
+            //             symbol: {
+            //                 type: "simple-marker",
+            //                 style: "circle",
+            //                 size: "15px",
+            //                 color: "#7CB815"
+            //             }
+            //         }, {
+            //             minValue: 20,
+            //             maxValue: 35,
+            //             label: "20 à 35",
+            //             symbol: {
+            //                 type: "simple-marker",
+            //                 style: "circle",
+            //                 size: "15px",
+            //                 color: "#F2FE2A"
+            //             }
+            //         }, {
+            //             minValue: 35,
+            //             maxValue: 50,
+            //             label: "35 à 50",
+            //             symbol: {
+            //                 type: "simple-marker",
+            //                 style: "circle",
+            //                 size: "15px",
+            //                 color: "#FFAC18"
+            //             }
+            //         }, {
+            //             minValue: 50,
+            //             maxValue: 999,
+            //             label: "> 50",
+            //             symbol: {
+            //                 type: "simple-marker",
+            //                 style: "circle",
+            //                 size: "15px",
+            //                 color: "#FE3C19"
+            //             }
+            //         }
+            //     ]
+            // };
+
+            // Crie a camada de feição com o renderer configurado
+            const featureLayerNitrates = new FeatureLayer({
+                url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/nitrates_time_slider/FeatureServer/0",
+                renderer: nitratesRenderer,
+                popupTemplate: template,
+                title: "Concentration de nitrates",
+                visible: false
+            });
+
+            map.add(featureLayerNitrates, 2);
 
             //===============================================================================================
 
             // Créer un nouveau type de symbologie pour représenter les points des piézomètres
-            const colors = ["#FFFF73", "#FF7F7F", "#73DFFF", "#98E600", "#D79E9E", "#FFBEE8", "#B2B2B2"];
 
             const commonProperties = {
                 type: "simple-marker",
@@ -531,7 +766,7 @@
                 renderer: piezoRenderer,
                 title: "Piézomètres (ADES)"
             });
-            map.add(featureLayer, 2);
+            map.add(featureLayer, 3);
 
             //===============================================================================================
 
@@ -620,14 +855,61 @@
                 ]
             };
 
-            // Charger le fichier shapefile des piézomètres
+            // Charger le fichier shapefile des qualitomètres
             const featureLayerQualito = new FeatureLayer({
                 url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/qualitometres/FeatureServer/0",
                 popupTemplate: template,
                 renderer: qualitoRenderer,
                 title: "Qualitomètres (ADES)"
             });
-            map.add(featureLayerQualito, 3);
+            map.add(featureLayerQualito, 4);
+
+            //===============================================================================================
+
+            // Histogram
+            view.whenLayerView(featureLayerNitrates).then((layerView) => {
+                const field = "Nitrates";
+                const min = 0;
+                const max = 150;
+
+                histogram({
+                    layer: featureLayerNitrates,
+                    field: field,
+                    numBins: 100,
+                    minValue: min,
+                    maxValue: max
+                }).then((histogramResponse) => {
+                    const slider = new HistogramRangeSlider({
+                        bins: histogramResponse.bins,
+                        min: min,
+                        max: max,
+                        values: [min, max],
+                        excludedBarColor: "#524e4e",
+                        rangeType: "between",
+                        container: document.getElementById("slider-container")
+                    });
+
+                    slider.on(
+                        ["thumb-change", "thumb-drag", "segment-drag"],
+                        (event) => {
+                            layerView.filter = {
+                                // generates the where clause for filtering features
+                                where: slider.generateWhereClause(field)
+                            };
+                        }
+                    );
+
+                    const filterExpand = new Expand({
+                        view: view,
+                        content: document.getElementById("controls"),
+                        expandIconClass: "esri-icon-filter",
+                        expandTooltip: "Histogramme",
+                        expanded: false
+                    });
+
+                    view.ui.add(filterExpand, "top-left");
+                });
+            });
 
             //===============================================================================================
 
@@ -710,9 +992,9 @@
             // Régler la visualisation highlight des features 
             var highlightFeatureLayer = null;
             var highlightFeatureLayerQualito = null;
+            var highlightFeatureLayerNitrates = null;
 
-            // Evento "pointer-move" para ambos os layers
-            // Évenement "pointer-move" pour les deux feature layers
+            // Évenement "pointer-move" pour les layers
             view.on("pointer-move", function (event) {
                 view.hitTest(event).then(function (response) {
                     // Réseter le highlight des deux layers
@@ -724,8 +1006,12 @@
                         highlightFeatureLayerQualito.remove();
                         highlightFeatureLayerQualito = null;
                     }
+                    if (highlightFeatureLayerNitrates) {
+                        highlightFeatureLayerNitrates.remove();
+                        highlightFeatureLayerNitrates = null;
+                    }
 
-                    // Vérifier si la sourris est positionnée sur le premier layer
+                    // Vérifier si la souris est positionnée sur le premier layer
                     var featureLayerResults = response.results.filter(function (result) {
                         return result.graphic.layer === featureLayer;
                     });
@@ -735,7 +1021,7 @@
                             highlightFeatureLayer = featureLayerView.highlight(feature);
                         });
                     } else {
-                        // Vérifier si la sourris est positionnée sur le deuxième layer
+                        // Vérifier si la souris est positionnée sur le deuxième layer
                         var featureLayerQualitoResults = response.results.filter(function (result) {
                             return result.graphic.layer === featureLayerQualito;
                         });
@@ -744,8 +1030,21 @@
                             view.whenLayerView(featureLayerQualito).then(function (featureLayerQualitoView) {
                                 highlightFeatureLayerQualito = featureLayerQualitoView.highlight(featureQualito);
                             });
+                        } else {
+                            // Vérifier si la souris est positionnée sur le troisième layer
+                            var featureLayerNitratesResults = response.results.filter(function (result) {
+                                return result.graphic.layer === featureLayerNitrates;
+                            });
+                            if (featureLayerNitratesResults.length > 0) {
+                                var featureNitrates = featureLayerNitratesResults[0].graphic;
+                                view.whenLayerView(featureLayerNitrates).then(function (featureLayerNitratesView) {
+                                    highlightFeatureLayerNitrates = featureLayerNitratesView.highlight(featureNitrates);
+                                });
+                            }
                         }
                     }
+
+
                 });
             });
 
@@ -832,6 +1131,39 @@
             });
             view.ui.add(bgExpand, "top-left");
 
+            // Create a TimeSlider for the given Feature Layer and field.
+            // Set the TimeSlider's view property.
+
+            const timeSlider = new TimeSlider({
+                container: "timeSlider",
+                view: view,
+                mode: "time-window",
+                // Specify the field that contains the time information
+                timeField: "Data",
+                // Set the full time extent based on your data
+                fullTimeExtent: {
+                    start: new Date(2000, 0, 1),
+                    end: new Date(2022, 0, 1)
+                },
+                // Set the initial time extent
+                timeExtent: {
+                    start: new Date(2000, 0, 1),
+                    end: new Date(2000, 11, 31, 23, 59, 59) // Último segundo do ano
+                }
+            });
+
+            // Add yearly intervals starting from the beginning of the TimeSlider.
+            timeSlider.stops = {
+                interval: {
+                    value: 1,
+                    unit: "years"
+                }
+            };
+
+            view.ui.add(timeSlider, "manual");
+
+
+
         });
 
     </script>
@@ -839,6 +1171,9 @@
 
 <body>
     <div id="viewDiv"></div>
+
+    <!-- Time Slider -->
+    <div id="timeSlider"></div>
 
     <!-- Modal pour représenter le graphique des données -->
     <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
@@ -851,6 +1186,14 @@
                     <button type="button" class="btn btn-default close-button" data-dismiss="modal">Fermer</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Histogram -->
+    <div id="controls" class="esri-widget">
+        <div id="description" class="esri-widget">Concentration moyenne annuelle de nitrates (mg/L)</div>
+        <div id="outer-container" class="esri-widget">
+            <div id="slider-container"></div>
         </div>
     </div>
 
