@@ -1,4 +1,4 @@
-<html lang="en">
+<html lang="fr">
 
 <head>
     <meta charset="utf-8" />
@@ -98,7 +98,10 @@
             HistogramRangeSlider,
             histogram
         ) => {
-            // Créer la carte
+
+            //===============================================================================================
+            
+            // Créer la carte web
             const map = new Map({
                 basemap: "topo-vector"  // Fond de carte par défaut
             });
@@ -167,7 +170,7 @@
 
             //===============================================================================================
 
-            // Codes couleurs de symbologie
+            // Codes couleurs de symbologie pour les masses d'eau et les entités hydrogéologiques
             const colorsMasseEau = ["#FED2D2", "#A0CAF6", "#CDF5FD", "#EDE2FD", "#FDEFD0", "#DEFDD0"];
             const colors = ["#FFFF73", "#FF7F7F", "#73DFFF", "#98E600", "#D79E9E", "#FFBEE8", "#B2B2B2"];
 
@@ -233,18 +236,6 @@
                             },
                             "stringFieldOption": "text-box"
                         },
-                        // {
-                        //     "fieldName": "Longueur_Chronique",
-                        //     "label": "Longueur de la chronique (ans)",
-                        //     "isEditable": true,
-                        //     "tooltip": "",
-                        //     "visible": true,
-                        //     "format": {
-                        //         "places": 2,
-                        //         "digitSeparator": true
-                        //     },
-                        //     "stringFieldOption": "text-box"
-                        // },
                         {
                             "fieldName": "Nitrates",
                             "label": "Nitrates (concentration moyenne annuelle en mg/L)",
@@ -321,7 +312,7 @@
 
             //===============================================================================================
 
-            // Réglér l'action du bouton
+            // Réglér l'action du bouton d'ouverture du siteweb du département du Val d'Oise
             view.popup.on("trigger-action", (event) => {
                 if (event.action.id === "action-val-oise") {
                     const link = "https://www.valdoise.fr/2-mon-departement.htm";
@@ -331,7 +322,7 @@
 
             //===============================================================================================
 
-            // Réglér l'action du bouton
+            // Réglér l'action du bouton d'ouverture des données ADES
             view.popup.on("trigger-action", (event) => {
                 if (event.action.id === "action") {
                     const selectedFeature = view.popup.selectedFeature;
@@ -344,11 +335,9 @@
                 }
             });
 
-
             //===============================================================================================
 
-            // Créer un nouveau type de symbologie pour représenter les masses d'eau associées au département
-
+            // Créer un nouveau type de symbologie pour représenter les masses d'eau souterraines associées au département
             const commonPropertiesME = {
                 type: "simple-fill",
                 color: [0, 0, 0, 0], // Pas de couleur de remplissage
@@ -357,43 +346,37 @@
                     width: 0.5
                 }
             };
-
             // Symbologie pour la masse d'eau HG002
             const symbolHG002 = {
                 ...commonPropertiesME,
                 color: colorsMasseEau[0]
             };
-
             // Symbologie pour la masse d'eau HG001
             const symbolHG001 = {
                 ...commonPropertiesME,
                 color: colorsMasseEau[1]
             };
-
             // Symbologie pour la masse d'eau HG201
             const symbolHG201 = {
                 ...commonPropertiesME,
                 color: colorsMasseEau[2]
             };
-
             // Symbologie pour la masse d'eau HG102
             const symbolHG102 = {
                 ...commonPropertiesME,
                 color: colorsMasseEau[3]
             };
-
             // Symbologie pour la masse d'eau HG104
             const symbolHG104 = {
                 ...commonPropertiesME,
                 color: colorsMasseEau[4]
             };
-
             // Symbologie pour la masse d'eau HG002
             const symbolHG107 = {
                 ...commonPropertiesME,
                 color: colorsMasseEau[5]
             };
-
+            // Renderer
             const masseEauRenderer = {
                 type: "unique-value", // autocasts as new UniqueValueRenderer()
                 legendOptions: {
@@ -435,7 +418,6 @@
                     }
                 ]
             };
-
             // Charger le fichier shapefile des masses d'eau souterraines
             const featureMasseEau = new FeatureLayer({
                 url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/masses_eau/FeatureServer/0",
@@ -446,8 +428,8 @@
             map.add(featureMasseEau, 0);
 
             //===============================================================================================
-            // Créer un nouveau type de symbologie pour représenter les départements
-
+            
+            // Créer un nouveau type de symbologie pour représenter les limites des départements
             const commonDepartements = {
                 type: "simple-fill",
                 color: [0, 0, 0, 0], // Pas de couleur de remplissage
@@ -456,7 +438,6 @@
                     width: 1
                 }
             };
-
             // Symbologie pour le département du Val d'Oise
             const symbolDepartement95 = {
                 ...commonDepartements,
@@ -465,7 +446,7 @@
                     width: 2
                 }
             };
-
+            // Renderer
             const departementsRenderer = {
                 type: "unique-value", // autocasts as new UniqueValueRenderer()
                 legendOptions: {
@@ -482,7 +463,6 @@
                     }
                 ]
             };
-
             // Charger le fichier shapefile des départements
             const featureDepartements = new FeatureLayer({
                 url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/departements/FeatureServer/0",
@@ -497,9 +477,8 @@
             const commonPropertiesNitrates = {
                 type: "simple-marker",
                 style: "circle",
-                size: "10px"  // pixels
+                size: "10px" 
             };
-
             // Symbologie pour la Craie
             const symbolCraieNitrates = {
                 ...commonPropertiesNitrates,
@@ -535,9 +514,9 @@
                 ...commonPropertiesNitrates,
                 color: colors[6]
             };
-
+            // Renderer
             const nitratesRenderer = {
-                type: "unique-value", // autocasts as new UniqueValueRenderer()
+                type: "unique-value",
                 legendOptions: {
                     title: "Entité hydrogéologique"
                 },
@@ -582,7 +561,7 @@
                     }
                 ]
             };
-            // Size
+            // Régler la taille des cercles
             const sizeVisualVariable = {
                 type: "size",
                 field: "Nitrates",
@@ -598,69 +577,7 @@
                 ]
             };
             nitratesRenderer.visualVariables = [sizeVisualVariable];
-
-            // var nitratesRenderer = {
-            //     type: "class-breaks",
-            //     field: "Nitrates",
-            //     legendOptions: {
-            //         title: "Concentration moyenne annuelle (mg/L)"
-            //     },
-            //     classBreakInfos: [
-            //         {
-            //             minValue: -1,
-            //             maxValue: 10,
-            //             label: "< 10",
-            //             symbol: {
-            //                 type: "simple-marker",
-            //                 style: "circle",
-            //                 size: "15px",
-            //                 color: "#147218"
-            //             }
-            //         }, {
-            //             minValue: 10,
-            //             maxValue: 20,
-            //             label: "10 à 20",
-            //             symbol: {
-            //                 type: "simple-marker",
-            //                 style: "circle",
-            //                 size: "15px",
-            //                 color: "#7CB815"
-            //             }
-            //         }, {
-            //             minValue: 20,
-            //             maxValue: 35,
-            //             label: "20 à 35",
-            //             symbol: {
-            //                 type: "simple-marker",
-            //                 style: "circle",
-            //                 size: "15px",
-            //                 color: "#F2FE2A"
-            //             }
-            //         }, {
-            //             minValue: 35,
-            //             maxValue: 50,
-            //             label: "35 à 50",
-            //             symbol: {
-            //                 type: "simple-marker",
-            //                 style: "circle",
-            //                 size: "15px",
-            //                 color: "#FFAC18"
-            //             }
-            //         }, {
-            //             minValue: 50,
-            //             maxValue: 999,
-            //             label: "> 50",
-            //             symbol: {
-            //                 type: "simple-marker",
-            //                 style: "circle",
-            //                 size: "15px",
-            //                 color: "#FE3C19"
-            //             }
-            //         }
-            //     ]
-            // };
-
-            // Crie a camada de feição com o renderer configurado
+            //  Charger le fichier shapefile des points de mesure de nitrates
             const featureLayerNitrates = new FeatureLayer({
                 url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/nitrates_time_slider/FeatureServer/0",
                 renderer: nitratesRenderer,
@@ -668,19 +585,16 @@
                 title: "Concentration de nitrates",
                 visible: false
             });
-
             map.add(featureLayerNitrates, 2);
 
             //===============================================================================================
 
             // Créer un nouveau type de symbologie pour représenter les points des piézomètres
-
             const commonProperties = {
                 type: "simple-marker",
                 style: "square",
-                size: "10px"  // pixels
+                size: "10px"  
             };
-
             // Symbologie pour la Craie
             const symbolCraie = {
                 ...commonProperties,
@@ -716,9 +630,9 @@
                 ...commonProperties,
                 color: colors[6]
             };
-
+            // Renderer
             const piezoRenderer = {
-                type: "unique-value", // autocasts as new UniqueValueRenderer()
+                type: "unique-value",
                 legendOptions: {
                     title: "Entité hydrogéologique"
                 },
@@ -758,7 +672,6 @@
                     }
                 ]
             };
-
             // Charger le fichier shapefile des piézomètres
             const featureLayer = new FeatureLayer({
                 url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/piezometres/FeatureServer/0",
@@ -770,13 +683,12 @@
 
             //===============================================================================================
 
-            // Créer un nouveau type de symbologie pour représenter les points des pqualitomètres
+            // Créer un nouveau type de symbologie pour représenter les points des qualitomètres
             const commonPropertiesQualito = {
                 type: "simple-marker",
                 style: "circle",
-                size: "10px"  // pixels
+                size: "10px" 
             };
-
             // Symbologie pour la Craie
             const symbolCraieQualito = {
                 ...commonPropertiesQualito,
@@ -812,9 +724,9 @@
                 ...commonPropertiesQualito,
                 color: colors[6]
             };
-
+            // Renderer
             const qualitoRenderer = {
-                type: "unique-value", // autocasts as new UniqueValueRenderer()
+                type: "unique-value", 
                 legendOptions: {
                     title: "Entité hydrogéologique"
                 },
@@ -823,38 +735,37 @@
                 field: "Groupe_hydrogeologique",
                 uniqueValueInfos: [
                     {
-                        value: "Craie du Crétacé", // code for interstates/freeways
+                        value: "Craie du Crétacé", 
                         symbol: symbolCraieQualito,
                         label: "Craie du Crétacé supérieur"
                     },
                     {
-                        value: "Calcaires du Lutétien", // code for interstates/freeways
+                        value: "Calcaires du Lutétien",
                         symbol: symbolLutentienQualito,
                         label: "Calcaires du Lutétien"
                     },
                     {
-                        value: "Calcaires du Lutétien ; Sables de l'Yprésien", // code for interstates/freeways
+                        value: "Calcaires du Lutétien ; Sables de l'Yprésien", 
                         symbol: symbolLutentienYpresienQualito,
                         label: "Calcaires du Lutétien et Sables de l'Yprésien"
                     },
                     {
-                        value: "Sables de l'Yprésien", // code for interstates/freeways
+                        value: "Sables de l'Yprésien",
                         symbol: symbolYpresienQualito,
                         label: "Sables de l'Yprésien"
                     },
                     {
-                        value: "Sables de l'Yprésien sous couverture des argiles", // code for interstates/freeways
+                        value: "Sables de l'Yprésien sous couverture des argiles",
                         symbol: symbolYpresienSousCouvertureQualito,
                         label: "Sables de l'Yprésien sous couverture des Argiles de Laon"
                     },
                     {
-                        value: "Alluvions de l'Oise", // code for interstates/freeways
+                        value: "Alluvions de l'Oise",
                         symbol: symbolAlluvionsOiseQualito,
                         label: "Alluvions de l'Oise"
                     }
                 ]
             };
-
             // Charger le fichier shapefile des qualitomètres
             const featureLayerQualito = new FeatureLayer({
                 url: "https://services8.arcgis.com/WtV4vxF1c49173Ve/arcgis/rest/services/qualitometres/FeatureServer/0",
@@ -866,12 +777,11 @@
 
             //===============================================================================================
 
-            // Histogram
+            // Histogramme (filtrer les données selon les valeurs des concentrations de Nitrates)
             view.whenLayerView(featureLayerNitrates).then((layerView) => {
                 const field = "Nitrates";
                 const min = 0;
                 const max = 150;
-
                 histogram({
                     layer: featureLayerNitrates,
                     field: field,
@@ -888,25 +798,21 @@
                         rangeType: "between",
                         container: document.getElementById("slider-container")
                     });
-
                     slider.on(
                         ["thumb-change", "thumb-drag", "segment-drag"],
                         (event) => {
                             layerView.filter = {
-                                // generates the where clause for filtering features
                                 where: slider.generateWhereClause(field)
                             };
                         }
                     );
-
                     const filterExpand = new Expand({
                         view: view,
                         content: document.getElementById("controls"),
                         expandIconClass: "esri-icon-filter",
-                        expandTooltip: "Histogramme",
+                        expandTooltip: "Filtrer les données",
                         expanded: false
                     });
-
                     view.ui.add(filterExpand, "top-left");
                 });
             });
@@ -923,12 +829,11 @@
 
             //===============================================================================================
 
-            // Legende de la carte
+            // Légende de la carte
             var legend = new Legend({
                 view: view,
-                style: 'classis' //classic ou card,
+                style: 'classic' //classic ou card,
             });
-
             // Bouton de visualisation de la légende
             const legendExpand = new Expand({
                 expandIconClass: "esri-icon-legend",
@@ -941,14 +846,13 @@
 
             //===============================================================================================
 
-            // Ferramenta de lista de layers disponíveis no mapa..
+            // Outil de liste des couches disponibles sur la carte
             var layerList = new LayerList({
                 view: view,
                 selectionEnabled: true,
                 layers: [],
                 content: "Liste de calques"
             });
-
             const layerListExpand = new Expand({
                 expandIconClass: "esri-icon-layers",
                 expandTooltip: "Liste de Calques",
@@ -993,11 +897,9 @@
             var highlightFeatureLayer = null;
             var highlightFeatureLayerQualito = null;
             var highlightFeatureLayerNitrates = null;
-
-            // Évenement "pointer-move" pour les layers
+            // Évenement "pointer-move" pour tous les layers
             view.on("pointer-move", function (event) {
                 view.hitTest(event).then(function (response) {
-                    // Réseter le highlight des deux layers
                     if (highlightFeatureLayer) {
                         highlightFeatureLayer.remove();
                         highlightFeatureLayer = null;
@@ -1010,8 +912,6 @@
                         highlightFeatureLayerNitrates.remove();
                         highlightFeatureLayerNitrates = null;
                     }
-
-                    // Vérifier si la souris est positionnée sur le premier layer
                     var featureLayerResults = response.results.filter(function (result) {
                         return result.graphic.layer === featureLayer;
                     });
@@ -1021,7 +921,6 @@
                             highlightFeatureLayer = featureLayerView.highlight(feature);
                         });
                     } else {
-                        // Vérifier si la souris est positionnée sur le deuxième layer
                         var featureLayerQualitoResults = response.results.filter(function (result) {
                             return result.graphic.layer === featureLayerQualito;
                         });
@@ -1031,7 +930,6 @@
                                 highlightFeatureLayerQualito = featureLayerQualitoView.highlight(featureQualito);
                             });
                         } else {
-                            // Vérifier si la souris est positionnée sur le troisième layer
                             var featureLayerNitratesResults = response.results.filter(function (result) {
                                 return result.graphic.layer === featureLayerNitrates;
                             });
@@ -1043,86 +941,16 @@
                             }
                         }
                     }
-
-
                 });
             });
 
-
-
-            // //===============================================================================================
-
-            // // Bouton de download des données
-            // var downloadButton = document.createElement("button");
-            // downloadButton.classList.add("esri-icon-download", "esri-widget--button");
-            // downloadButton.setAttribute("title", "Télécharger les données");
-            // view.ui.add(downloadButton, "top-left");
-            // downloadButton.addEventListener("click", function () {
-            //     featureLayer.queryFeatures().then(function (results) {
-            //         var table = createTable(results.features);
-            //         exportTable(table, "data.csv");
-            //     });
-            // });
-            // function createTable(features) {
-            //     var header = ["Identifiant National BSS", "Description", "X (WGS84)", "Y (WGS84)", "Altitude (m)", "Date début", "Date fin", "Longueur (ans)", "État",
-            //         "Code Masse d'eau", "Masse d'eau", "Code Entité hydrogéologique", "Entité hydrogéologique", "URL"]; // Colonnes à être exportées sur le tableau
-            //     var rows = features.map(function (feature) {
-            //         return [ // Noms des colonnees selon la table d'attributs
-            //             feature.attributes.Identifiant_national_BSS,
-            //             feature.attributes.Dénomination,
-            //             feature.attributes.X_WGS84,
-            //             feature.attributes.Y_WGS84,
-            //             feature.attributes.Altitude__m,
-            //             feature.attributes.Date_debut,
-            //             feature.attributes.Date_fin,
-            //             feature.attributes.Longueur,
-            //             feature.attributes.Etat,
-            //             feature.attributes.Code_Masse_d_eau,
-            //             feature.attributes.Masse_d_eau,
-            //             feature.attributes.Code_Entite_Hydrogeologique,
-            //             feature.attributes.Entite_hydrogéologique,
-            //             feature.attributes.URL,
-            //         ];
-            //     });
-            //     rows.unshift(header);
-            //     var table = document.createElement("table");
-            //     rows.forEach(function (row) {
-            //         var tableRow = document.createElement("tr");
-            //         row.forEach(function (value) {
-            //             var tableCell = document.createElement("td");
-            //             tableCell.innerText = value;
-            //             tableRow.appendChild(tableCell);
-            //         });
-            //         table.appendChild(tableRow);
-            //     });
-            //     return table;
-            // }
-            // function exportTable(table, filename) {
-            //     var csv = tableToCSV(table);
-            //     var encodedUri = 'data:text/csv;charset=iso-8859-1,%EF%BB%BF' + encodeURIComponent(csv); // adiciona o encoding aqui
-            //     var downloadLink = document.createElement("a");
-            //     downloadLink.setAttribute("href", encodedUri);
-            //     downloadLink.setAttribute("download", filename);
-            //     downloadLink.click();
-            // }
-            // function tableToCSV(table) {
-            //     var rows = table.querySelectorAll("tr");
-            //     return Array.from(rows).map(function (row) {
-            //         var cells = row.querySelectorAll("td");
-            //         return Array.from(cells).map(function (cell) {
-            //             return '"' + cell.innerText.replace(/"/g, '""') + '"';
-            //         }).join(",");
-            //     }).join("\n");
-            // }
-
             //===============================================================================================
 
-            // To add the DistanceMeasurement2D widget to the map
+            // Ajouter le widget "DistanceMeasurement2D" à la carte
             const measurementWidget = new DistanceMeasurement2D({
                 view: view
             });
-
-            // Outil pour afficher/cacher la galerie d'options de fonds de carte 
+            // Outil pour afficher/cacher le widget de mesure
             var bgExpand = new Expand({
                 view: view,
                 content: measurementWidget,
@@ -1131,38 +959,37 @@
             });
             view.ui.add(bgExpand, "top-left");
 
-            // Create a TimeSlider for the given Feature Layer and field.
-            // Set the TimeSlider's view property.
+            //===============================================================================================
 
+            // Créer un TimeSlider pour la Feature Layer donnée et le champ spécifié.
+            // Définir la propriété view du TimeSlider.
             const timeSlider = new TimeSlider({
                 container: "timeSlider",
                 view: view,
                 mode: "time-window",
-                // Specify the field that contains the time information
+                // Spécifier le champ qui contient les informations temporelles.
                 timeField: "Data",
-                // Set the full time extent based on your data
+                // Définir l'étendue temporelle complète en fonction des données.
                 fullTimeExtent: {
                     start: new Date(2000, 0, 1),
                     end: new Date(2022, 0, 1)
                 },
-                // Set the initial time extent
+                // Définir l'étendue temporelle initiale.
                 timeExtent: {
                     start: new Date(2000, 0, 1),
-                    end: new Date(2000, 11, 31, 23, 59, 59) // Último segundo do ano
+                    end: new Date(2000, 11, 31, 23, 59, 59)
                 }
             });
-
-            // Add yearly intervals starting from the beginning of the TimeSlider.
+            // Ajouter des intervalles annuels à partir du début du TimeSlider.
             timeSlider.stops = {
                 interval: {
                     value: 1,
                     unit: "years"
                 }
             };
-
             view.ui.add(timeSlider, "manual");
 
-
+            //===============================================================================================
 
         });
 
@@ -1170,13 +997,14 @@
 </head>
 
 <body>
+    <!-- Carte web -->
     <div id="viewDiv"></div>
 
     <!-- Time Slider -->
     <div id="timeSlider"></div>
 
     <!-- Modal pour représenter le graphique des données -->
-    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <!-- <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
         <div class="modal-dialog" style="width: 1100px;" role="document">
             <div class="modal-content">
                 <div class="modal-body" style="height: 550px;">
@@ -1187,9 +1015,9 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
-    <!-- Histogram -->
+    <!-- Histogramme -->
     <div id="controls" class="esri-widget">
         <div id="description" class="esri-widget">Concentration moyenne annuelle de nitrates (mg/L)</div>
         <div id="outer-container" class="esri-widget">
