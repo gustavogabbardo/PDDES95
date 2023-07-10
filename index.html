@@ -78,7 +78,9 @@
             "esri/widgets/DistanceMeasurement2D",
             "esri/widgets/HistogramRangeSlider",
             "esri/smartMapping/statistics/histogram",
-            "esri/widgets/Print"
+            "esri/widgets/Print",
+            "esri/layers/ImageryTileLayer",
+            "esri/layers/MapImageLayer",
         ], (
             Map,
             FeatureLayer,
@@ -99,7 +101,9 @@
             DistanceMeasurement2D,
             HistogramRangeSlider,
             histogram,
-            Print
+            Print,
+            ImageryTileLayer,
+            MapImageLayer,
         ) => {
 
             //===============================================================================================
@@ -432,6 +436,22 @@
 
             //===============================================================================================
 
+            const CLClayer = new MapImageLayer({
+                url: "https://image.discomap.eea.europa.eu/arcgis/rest/services/Corine/CLC2018_WM/MapServer",
+                title: "Usage du sol",
+                sublayers: [
+                    {
+                        id: 1,
+                        visible: true,
+                        title: 'Corine Land Cover 2018'
+                    }
+                ],
+                visible: false
+            });
+            map.add(CLClayer, 1);
+
+            //===============================================================================================
+
             // Créer un nouveau type de symbologie pour représenter les limites des départements
             const commonDepartements = {
                 type: "simple-fill",
@@ -472,7 +492,7 @@
                 renderer: departementsRenderer,
                 title: "Limites des départements"
             });
-            map.add(featureDepartements, 1);
+            map.add(featureDepartements, 2);
 
             //==============================================================================================
 
@@ -588,7 +608,7 @@
                 title: "Concentration de nitrates",
                 visible: false
             });
-            map.add(featureLayerNitrates, 2);
+            map.add(featureLayerNitrates, 3);
 
             //===============================================================================================
 
@@ -682,7 +702,7 @@
                 renderer: piezoRenderer,
                 title: "Piézomètres (ADES)"
             });
-            map.add(featureLayer, 3);
+            map.add(featureLayer, 4);
 
             //===============================================================================================
 
@@ -776,7 +796,7 @@
                 renderer: qualitoRenderer,
                 title: "Qualitomètres (ADES)"
             });
-            map.add(featureLayerQualito, 4);
+            map.add(featureLayerQualito, 5);
 
             //===============================================================================================
 
